@@ -1,2 +1,0 @@
-background: 3
-road: 2

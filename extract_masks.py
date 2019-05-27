@@ -12,7 +12,7 @@ from math import ceil
 from matplotlib.patches import Circle
 import pickle
 import config as cfg
-import utils_v2
+import utils
 
 def json2mask(annotation_path, labels_mapping, sz):
 
@@ -79,7 +79,7 @@ def get_section(section_name):
 
 	section_start = section_name.split("-")[0]
 	section_end = section_name.split("-")[1]
-	return utils_v2.string2msec(section_start), utils_v2.string2msec(section_end)
+	return utils.string2msec(section_start), utils.string2msec(section_end)
 
 
 class MaskExtractor:
@@ -129,7 +129,7 @@ class MaskExtractor:
 	def save(self, frame, mask, mask_test, vis_img):
 
 		time_msec = self.video_loader.get_last_frame_time()
-		img_name = utils_v2.msec2string(time_msec) + '.png'
+		img_name = utils.msec2string(time_msec) + '.png'
 
 		cv2.imwrite(os.path.join(self.masks_dir, img_name), mask)
 		cv2.imwrite(os.path.join(self.masks_test_dir, img_name), mask_test)
@@ -139,8 +139,8 @@ class MaskExtractor:
 
 if __name__ == "__main__":
 
-	config_path = utils_v2.get_config_path()
-	video_config, labels_mapping = utils_v2.load_config_info(config_path)
+	config_path = utils.get_config_path()
+	video_config, labels_mapping = utils.load_config_info(config_path)
 	work_dir = video_config['work_dir']
 
 	annotations_dir = os.path.join(work_dir, 'annotations')
@@ -149,7 +149,7 @@ if __name__ == "__main__":
 
 	assert os.path.exists(work_dir), "This video has not been labelled"
 
-	video_loader = utils_v2.VideoLoader(video_config['video_path'], video_config['camera'])
+	video_loader = utils.VideoLoader(video_config['video_path'], video_config['camera'])
 	mask_extractor = MaskExtractor(work_dir, video_loader, labels_mapping)
 
 	for glob in Path(annotations_dir).glob("*.json"):

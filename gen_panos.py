@@ -1,4 +1,4 @@
-import utils_v2
+import utils
 import os.path
 import os
 import cv2
@@ -84,14 +84,7 @@ def create_pano(frames_list):
 
 	M_list = [np.eye(3)]
 	for i in range(1, len(frames_list)):
-		# plt.figure()
-		# plt.imshow(frames_list[i-1])
-		# plt.figure()
-		# plt.imshow(frames_list[i])
-		# plt.show()
 		M = homo.homography(frames_list[i-1], frames_list[i], draw_matches=False)
-		# print M
-		# pdb.set_trace()
 		M_list.append(np.dot(M_list[-1],M))
 
 	center_image_idx = len(frames_list) / 2 + len(frames_list) % 2 - 1
@@ -100,9 +93,6 @@ def create_pano(frames_list):
 	_M_list = [np.dot(Minv, M) for M in M_list]
 
 	xlim, ylim = output_limits(frames_list, _M_list)
-
-	# print xlim
-	# pdb.set_trace()
 
 	xmin = np.min(xlim[:,0])
 	xmax = np.max(xlim[:,1])
@@ -133,16 +123,16 @@ def create_pano(frames_list):
 
 if __name__ == "__main__":
 
-	config_path = utils_v2.get_config_path()
-	video_config, labels_mapping = utils_v2.load_config_info(config_path)
+	config_path = utils.get_config_path()
+	video_config, labels_mapping = utils.load_config_info(config_path)
 	work_dir = video_config['work_dir']
 
 	if not os.path.exists(work_dir):
 		copy_tree("plantilla", work_dir)
 
-	start_time_msec = utils_v2.string2msec(video_config['start_time'])
-	end_time_msec = utils_v2.string2msec(video_config['end_time'])
-	duration_msec = utils_v2.string2msec(video_config['duration'])
+	start_time_msec = utils.string2msec(video_config['start_time'])
+	end_time_msec = utils.string2msec(video_config['end_time'])
+	duration_msec = utils.string2msec(video_config['duration'])
 
 	if duration_msec < (end_time_msec - start_time_msec):
 		num_itervals = (end_time_msec - start_time_msec) / duration_msec
@@ -151,20 +141,18 @@ if __name__ == "__main__":
 		duration_msec = end_time_msec - start_time_msec
 
 	end_time_msec = start_time_msec + duration_msec
-	video_loader = utils_v2.VideoLoader(video_config['video_path'], video_config['camera'], start_time_msec, end_time_msec)
+	video_loader = utils.VideoLoader(video_config['video_path'], video_config['camera'], start_time_msec, end_time_msec)
 
 	for _ in range(num_itervals):
 
 		frames_list = []
 		for frame in iter(video_loader):
-			# plt.imshow(frame)
-			# plt.show()
 			frames_list.append(frame)
 
 		if len(frames_list) > 0:
 
-			pano_name = "{}-{}".format(utils_v2.msec2string(start_time_msec), utils_v2.msec2string(end_time_msec))
-			#pano, parameters = create_pano(frames_list)
+			pano_name = "{}-{}".format(utils.msec2string(start_time_msec), utils.msec2string(end_time_msec))
+			
 			try:
 
 				pano, parameters = create_pano(frames_list)

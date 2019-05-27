@@ -1,3 +1,0 @@
--encontrar porque no sale igual que antes la mascar extraída (no muy importante)
--crear metodo que devuelva el time_msec anterior  ** hecho
--anadir ficheros de configuracion yml ** hecho
