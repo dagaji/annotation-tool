@@ -2,8 +2,6 @@ import json
 import cv2
 import os.path
 import vis
-import argparse
-from downscale import _downscale as downscale
 import pdb
 import numpy as np
 from matplotlib import pyplot as plt
@@ -16,37 +14,28 @@ import pickle
 import config as cfg
 import utils_v2
 
-def make_parser():
-	parser = argparse.ArgumentParser()
-	parser.add_argument('--video_path', type=str, required=True)
-	parser.add_argument('--labels', type=str, default="labels_mapping.txt")
-	parser.add_argument('--fps', type=float, default=1.0)
-	parser.add_argument('--camera', type=str, required=True)
-	return parser
+def json2mask(annotation_path, labels_mapping, sz):
 
-def check_point(point, sz):
+	def check_point(point):
 
-	h, w = sz
+		h, w = sz
 
-	if point[0] >= w:
-		x = w - 1
-	elif point[0] < 0:
-		x = 0
-	else:
-		x = point[0]
+		if point[0] >= w:
+			x = w - 1
+		elif point[0] < 0:
+			x = 0
+		else:
+			x = point[0]
 
 
-	if point[1] >= h:
-		y = h - 1
-	elif h < 0:
-		y = 0
-	else:
-		y = point[1]
+		if point[1] >= h:
+			y = h - 1
+		elif h < 0:
+			y = 0
+		else:
+			y = point[1]
 
-	return (x, y)
-
-
-def json2mask(annotation_path, labels_mapping, sz=(2160, 4096)):
+		return (x, y)
 
 	mask = labels_mapping["background"] * np.ones(sz).astype(np.uint8)
 	test_mask = labels_mapping["background"] * np.ones(sz).astype(np.uint8)
@@ -63,7 +52,7 @@ def json2mask(annotation_path, labels_mapping, sz=(2160, 4096)):
 	for shape in json_data["shapes"]:
 
 		npoints = len(shape["points"])
-		xy = [check_point(tuple(point), sz) for point in shape["points"]]
+		xy = [check_point(tuple(point)) for point in shape["points"]]
 		label_mapping = labels_mapping[shape["label"]]
 
 		if npoints == 2:
@@ -76,7 +65,7 @@ def json2mask(annotation_path, labels_mapping, sz=(2160, 4096)):
 	for shape in json_data["shapes"]:
 
 		npoints = len(shape["points"])
-		xy = [check_point(tuple(point), sz) for point in shape["points"]]
+		xy = [check_point(tuple(point)) for point in shape["points"]]
 		label_mapping = labels_mapping[shape["label"]]
 
 		if npoints == 2:
@@ -132,7 +121,7 @@ class MaskExtractor:
 			mask = np.squeeze(mask)
 			mask_test = np.squeeze(mask_test)
 
-			vis_img = vis.vis_seg(frame, mask, vis.make_palette(cfg.NUM_CLASSES))
+			vis_img = vis.vis_seg(frame, mask, vis.make_palette(len(self.labels_mapping)))
 
 			self.save(frame, mask, mask_test, vis_img)
 
@@ -150,26 +139,17 @@ class MaskExtractor:
 
 if __name__ == "__main__":
 
-	args = make_parser().parse_args()
-
-	with open(args.labels, 'r') as f:
-			labels_mapping = dict()
-			for line in f:
-				line = line.replace(" ", "")
-				label_name = line.split(':')[0]
-				label_integer = int(line.split(':')[1])
-				labels_mapping[label_name] = label_integer
-
-	video_name = Path(args.video_path).parts[-1].split(".")[0]
-	work_dir = os.path.join(cfg.DATA_PATH, video_name)
+	config_path = utils_v2.get_config_path()
+	video_config, labels_mapping = utils_v2.load_config_info(config_path)
+	work_dir = video_config['work_dir']
 
 	annotations_dir = os.path.join(work_dir, 'annotations')
 	parameters_dir = os.path.join(work_dir, 'parameters')
 	panos_dir = os.path.join(work_dir, 'panos')
 
-	assert os.path.join(work_dir), "This video has not been labelled"
+	assert os.path.exists(work_dir), "This video has not been labelled"
 
-	video_loader = utils_v2.VideoLoader(args.video_path, args.camera)
+	video_loader = utils_v2.VideoLoader(video_config['video_path'], video_config['camera'])
 	mask_extractor = MaskExtractor(work_dir, video_loader, labels_mapping)
 
 	for glob in Path(annotations_dir).glob("*.json"):
@@ -177,7 +157,7 @@ if __name__ == "__main__":
 		section_name = os.path.splitext(os.path.basename(glob.parts[-1]))[0]
 
 		pano = cv2.imread(os.path.join(panos_dir, section_name + ".png"))
-		full_mask = json2mask(os.path.join(annotations_dir, glob.parts[-1]), labels_mapping, sz=pano.shape[:2])
+		full_mask = json2mask(os.path.join(annotations_dir, glob.parts[-1]), labels_mapping, pano.shape[:2])
 
 		with open(os.path.join(parameters_dir, section_name + ".pickle"), 'rb') as handle:
 			parameters = pickle.load(handle)

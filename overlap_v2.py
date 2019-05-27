@@ -8,20 +8,9 @@ import pdb
 import pickle
 from distutils.dir_util import copy_tree
 from pathlib import Path
-import config as cfg
 import homography as homo
 import matplotlib.pyplot as plt
 
-
-def make_parser():
-	parser = argparse.ArgumentParser()
-	parser.add_argument('--video_path', type=str, required=True)
-	parser.add_argument('--start_time', type=str, required=True)
-	parser.add_argument('--end_time', type=str, required=True)
-	parser.add_argument('--fps', type=float, default=1.0)
-	parser.add_argument('--camera', type=str, required=True)
-	parser.add_argument('--duration', type=str, default="0:15")
-	return parser
 
 def output_limits(frames_list, M_list):
     
@@ -144,16 +133,16 @@ def create_pano(frames_list):
 
 if __name__ == "__main__":
 
-	args = make_parser().parse_args()
+	config_path = utils_v2.get_config_path()
+	video_config, labels_mapping = utils_v2.load_config_info(config_path)
+	work_dir = video_config['work_dir']
 
-	video_name = Path(args.video_path).parts[-1].split(".")[0]
-	work_dir = os.path.join(cfg.DATA_PATH, video_name)
 	if not os.path.exists(work_dir):
 		copy_tree("plantilla", work_dir)
 
-	start_time_msec = utils_v2.string2msec(args.start_time)
-	end_time_msec = utils_v2.string2msec(args.end_time)
-	duration_msec = utils_v2.string2msec(args.duration)
+	start_time_msec = utils_v2.string2msec(video_config['start_time'])
+	end_time_msec = utils_v2.string2msec(video_config['end_time'])
+	duration_msec = utils_v2.string2msec(video_config['duration'])
 
 	if duration_msec < (end_time_msec - start_time_msec):
 		num_itervals = (end_time_msec - start_time_msec) / duration_msec
@@ -162,7 +151,7 @@ if __name__ == "__main__":
 		duration_msec = end_time_msec - start_time_msec
 
 	end_time_msec = start_time_msec + duration_msec
-	video_loader = utils_v2.VideoLoader(args.video_path, args.camera, start_time_msec, end_time_msec)
+	video_loader = utils_v2.VideoLoader(video_config['video_path'], video_config['camera'], start_time_msec, end_time_msec)
 
 	for _ in range(num_itervals):
 

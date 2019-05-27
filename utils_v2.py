@@ -4,7 +4,11 @@ import math
 import argparse
 import pdb
 import os.path
-import config as cfg
+import yaml
+from pathlib import Path
+
+ANNOTATION_TOOL_PATH = os.path.dirname(os.path.realpath(__file__))
+CALIB_DATA_PATH = os.path.join(ANNOTATION_TOOL_PATH, 'calib_data')
 
 class VideoLoader:
 
@@ -12,7 +16,7 @@ class VideoLoader:
 
         assert os.path.exists(video_path), "Video not found."
 
-        camera_data_path = os.path.join(cfg.CALIB_DATA_PATH, camera_name)
+        camera_data_path = os.path.join(CALIB_DATA_PATH, camera_name)
         assert os.path.exists(camera_data_path), "Camera data not found."
 
         self.vidcap = cv2.VideoCapture(video_path)
@@ -82,11 +86,9 @@ def downscale(img, max_dim):
         return None
 
 def undistort(img, dist, mtx):
-
     h, w = img.shape[:2]
     newcameramtx, roi = cv2.getOptimalNewCameraMatrix(mtx, dist,(w,h),0,(w,h))
     dst = cv2.undistort(img, mtx, dist, None, newcameramtx)
-
     return dst
 
 
@@ -103,3 +105,35 @@ def msec2string(time_msec):
     time_min = time_sec / 60
     time_string = "{}:{:02d}".format(time_min, time_sec - time_min * 60)
     return time_string
+
+
+def get_config_path():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--config', type=str, required=True)
+    args = parser.parse_args()
+    return args.config
+
+
+def load_config_info(config_path):
+
+
+    with open(config_path, 'r') as stream:
+        video_config = yaml.safe_load(stream)
+
+    video_config.setdefault('fps', 1.0)
+    video_config.setdefault('duration', "0:15")
+
+    dataset_config_dir = os.path.dirname(config_path)
+    dataset_config_path = os.path.join(dataset_config_dir, "dataset.yml")
+
+    with open(dataset_config_path, 'r') as stream:
+        dataset_config = yaml.safe_load(stream)
+
+    video_name = Path(video_config['video_path']).parts[-1].split(".")[0]
+    work_dir = os.path.join(dataset_config['dataset_dir'], video_name)
+    video_config['work_dir'] = work_dir
+
+    dataset_config['LABELS']['background'] = dataset_config['LABELS'].pop(video_config['background'])
+    del video_config['background']
+
+    return video_config, dataset_config['LABELS']
