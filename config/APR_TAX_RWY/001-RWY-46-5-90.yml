@@ -1,0 +1,8 @@
+
+VIDEO-INFO:
+  video_path: "/home/davidgj/projects_v2/videos_RWY/001-RWY-46-5-90.MOV"
+  background: "resto"
+  start_time: "0:07"
+  end_time: "1:00"
+  camera: "zenmuseZ3"
+  fps: 1.0

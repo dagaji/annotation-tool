@@ -1,0 +1,6 @@
+*.pyc
+*.png
+*.json
+datos_calib_v2/*
+datos_calib/*
+data/*

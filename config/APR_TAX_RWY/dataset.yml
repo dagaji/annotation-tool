@@ -1,0 +1,8 @@
+
+dataset_dir: "/home/davidgj/projects_v2/videos_dataset_prueba"
+
+LABELS:
+  APR: 0
+  line: 1
+  road: 2
+  resto: 3
