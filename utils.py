@@ -12,66 +12,28 @@ CALIB_DATA_PATH = os.path.join(ANNOTATION_TOOL_PATH, 'calib_data')
 
 class VideoLoader:
 
-    def __init__(self, video_path, camera_name, start_time_msec=0, end_time_msec=0, max_dim=1000, fps=1.0):
-
-        assert os.path.exists(video_path), "Video not found."
-
-        camera_data_path = os.path.join(CALIB_DATA_PATH, camera_name)
-        assert os.path.exists(camera_data_path), "Camera data not found."
+    def __init__(self, video_path, camera_dir, max_dim=1000):
 
         self.vidcap = cv2.VideoCapture(video_path)
-
-        self.dist = np.load(os.path.join(camera_data_path, 'dist.npy'))
-        self.mtx = np.load(os.path.join(camera_data_path, 'mtx.npy'))
-
-        self.start_time_msec = start_time_msec
-        self.end_time_msec = end_time_msec
-        self.current_time_msec = start_time_msec
-
+        self.dist = np.load(os.path.join(camera_dir, 'dist.npy'))
+        self.mtx = np.load(os.path.join(camera_dir, 'mtx.npy'))
         self.max_dim = max_dim
 
-        self.delay_msec = int(1000 / fps)
+    def frame_at(self, time_msec):
 
-    def reset(self, start_time_msec, end_time_msec):
-
-        self.start_time_msec = start_time_msec
-        self.end_time_msec = end_time_msec
-        self.current_time_msec = start_time_msec
-
-    def __iter__(self):
-        self.current_time_msec = self.start_time_msec
-        return self
-
-    def __len__(self):
-        return (self.end_time_msec - self.start_time_msec) / self.delay_msec + 1
-
-    def next(self):
-
-        success = (self.current_time_msec <= self.end_time_msec)
-
+        self.vidcap.set(cv2.CAP_PROP_POS_MSEC, time_msec)
+        success, frame = self.vidcap.read()
         if success:
-            self.vidcap.set(cv2.CAP_PROP_POS_MSEC, self.current_time_msec)
-            success, frame = self.vidcap.read()
-            if success:
-                print ">> Loading frame at {}".format(msec2string(self.current_time_msec))
-                frame = self.process_frame(frame)
-                self.current_time_msec += self.delay_msec
-
-        if success:
+            print ">> Loading frame at {}".format(time_msec)
+            frame = self.process_frame(frame)
             return frame
         else:
-            raise StopIteration
+            return None
 
     def process_frame(self, frame):
         frame = undistort(frame, self.dist, self.mtx)
         frame = downscale(frame, self.max_dim)
         return frame
-
-    def get_last_frame_time(self):
-        if self.current_time_msec == self.start_time_msec:
-            return -1
-        else:
-            return self.current_time_msec - self.delay_msec
 
 
 def downscale(img, max_dim):
@@ -120,6 +82,13 @@ def load_config_info(config_path):
     with open(config_path, 'r') as stream:
         video_config = yaml.safe_load(stream)
 
+    camera_dir = os.path.join(CALIB_DATA_PATH, video_config.pop("camera"))
+
+    assert os.path.exists(video_config['video_path']), "Video not found."
+    assert os.path.exists(camera_dir), "Camera data not found."
+
+    video_config['camera_dir'] = camera_dir
+
     video_config.setdefault('fps', 1.0)
     video_config.setdefault('duration', "0:15")
 
@@ -132,6 +101,7 @@ def load_config_info(config_path):
     video_name = Path(video_config['video_path']).parts[-1].split(".")[0]
     work_dir = os.path.join(dataset_config['dataset_dir'], video_name)
     video_config['work_dir'] = work_dir
+
 
     dataset_config['LABELS']['background'] = dataset_config['LABELS'].pop(video_config['background'])
     del video_config['background']

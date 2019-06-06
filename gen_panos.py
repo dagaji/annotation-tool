@@ -133,6 +133,7 @@ if __name__ == "__main__":
 	start_time_msec = utils.string2msec(video_config['start_time'])
 	end_time_msec = utils.string2msec(video_config['end_time'])
 	duration_msec = utils.string2msec(video_config['duration'])
+	step_msec = int(1000 / video_config['fps'])
 
 	if duration_msec < (end_time_msec - start_time_msec):
 		num_itervals = (end_time_msec - start_time_msec) / duration_msec
@@ -141,12 +142,17 @@ if __name__ == "__main__":
 		duration_msec = end_time_msec - start_time_msec
 
 	end_time_msec = start_time_msec + duration_msec
-	video_loader = utils.VideoLoader(video_config['video_path'], video_config['camera'], start_time_msec, end_time_msec)
+
+	video_loader = utils.VideoLoader(video_config['video_path'], video_config['camera_dir'])
 
 	for _ in range(num_itervals):
 
 		frames_list = []
-		for frame in iter(video_loader):
+		time_msec_list = range(start_time_msec, end_time_msec, step_msec)
+		for time_msec in time_msec_list:
+			frame = video_loader.frame_at(time_msec)
+			if frame is None:
+				break
 			frames_list.append(frame)
 
 		if len(frames_list) > 0:
@@ -170,4 +176,3 @@ if __name__ == "__main__":
 			
 		start_time_msec = end_time_msec
 		end_time_msec = start_time_msec + duration_msec
-		video_loader.reset(start_time_msec, end_time_msec)

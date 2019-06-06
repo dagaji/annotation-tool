@@ -75,11 +75,10 @@ def json2mask(annotation_path, labels_mapping, sz):
 
 	return concat_mask
 
-def get_section(section_name):
-
+def get_section(section_name, step_msec):
 	section_start = section_name.split("-")[0]
 	section_end = section_name.split("-")[1]
-	return utils.string2msec(section_start), utils.string2msec(section_end)
+	return range(utils.string2msec(section_start), utils.string2msec(section_end), step_msec)
 
 
 class MaskExtractor:
@@ -90,20 +89,18 @@ class MaskExtractor:
 		self.masks_test_dir = os.path.join(work_dir, 'masks_test')
 		self.vis_dir = os.path.join(work_dir, 'vis')
 		self.imgs_dir = os.path.join(work_dir, 'images')
-
 		self.video_loader = video_loader
-
 		self.labels_mapping = labels_mapping
 
 	def extract(self, full_mask, parameters, section):
 
 		Minv_list, coords1_list, coords2_list = parameters
 
-		self.video_loader.reset(*section)
-
 		assert len(video_loader) == len(Minv_list) == len(coords1_list) == len(coords2_list), "Could not extract masks"
 
-		for idx, frame in enumerate(iter(self.video_loader)):
+		for idx, time_msec in enumerate(section):
+
+			frame = self.video_loader.frame_at(time_msec)
 
 			Minv = Minv_list[idx]
 			coords1 = coords1_list[idx]
@@ -123,14 +120,12 @@ class MaskExtractor:
 
 			vis_img = vis.vis_seg(frame, mask, vis.make_palette(len(self.labels_mapping)))
 
-			self.save(frame, mask, mask_test, vis_img)
+			self.save(frame, mask, mask_test, vis_img, utils.msec2string(time_msec))
 
 
-	def save(self, frame, mask, mask_test, vis_img):
+	def save(self, frame, mask, mask_test, vis_img, time_string):
 
-		time_msec = self.video_loader.get_last_frame_time()
 		img_name = utils.msec2string(time_msec) + '.png'
-
 		cv2.imwrite(os.path.join(self.masks_dir, img_name), mask)
 		cv2.imwrite(os.path.join(self.masks_test_dir, img_name), mask_test)
 		cv2.imwrite(os.path.join(self.vis_dir, img_name), vis_img)
@@ -142,6 +137,7 @@ if __name__ == "__main__":
 	config_path = utils.get_config_path()
 	video_config, labels_mapping = utils.load_config_info(config_path)
 	work_dir = video_config['work_dir']
+	step_msec = int(1000 / video_config['fps'])
 
 	annotations_dir = os.path.join(work_dir, 'annotations')
 	parameters_dir = os.path.join(work_dir, 'parameters')
@@ -162,7 +158,7 @@ if __name__ == "__main__":
 		with open(os.path.join(parameters_dir, section_name + ".pickle"), 'rb') as handle:
 			parameters = pickle.load(handle)
 
-		section = get_section(section_name)
+		section = get_section(section_name, step_msec)
 
 		try:
 			mask_extractor.extract(full_mask, parameters, section)
