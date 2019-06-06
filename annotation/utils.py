@@ -7,8 +7,8 @@ import os.path
 import yaml
 from pathlib import Path
 
-ANNOTATION_TOOL_PATH = os.path.dirname(os.path.realpath(__file__))
-CALIB_DATA_PATH = os.path.join(ANNOTATION_TOOL_PATH, 'calib_data')
+ANNOTATION_PATH = os.path.dirname(os.path.realpath(__file__))
+CALIB_DATA_PATH = os.path.join(ANNOTATION_PATH, '..', 'calib_data')
 
 class VideoLoader:
 
@@ -24,7 +24,7 @@ class VideoLoader:
         self.vidcap.set(cv2.CAP_PROP_POS_MSEC, time_msec)
         success, frame = self.vidcap.read()
         if success:
-            print ">> Loading frame at {}".format(time_msec)
+            print ">> Loading frame at {}".format(msec2string(time_msec))
             frame = self.process_frame(frame)
             return frame
         else:

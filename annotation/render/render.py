@@ -1,15 +1,8 @@
 import json
-import cv2
-import os.path
 import pdb
 import numpy as np
-from matplotlib import pyplot as plt
-from pathlib import Path
 import PIL.Image
 import PIL.ImageDraw
-from math import ceil
-from matplotlib.patches import Circle
-import pickle
 from .render_registry import register_render
 
 @register_render('labelme')

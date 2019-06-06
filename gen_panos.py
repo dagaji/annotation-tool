@@ -1,15 +1,12 @@
-import annotation.utils as utils
 import os.path
-import os
 import cv2
-import argparse
 import numpy as np
 import pdb
 import pickle
 from distutils.dir_util import copy_tree
 from pathlib import Path
 import annotation.homography as homo
-import matplotlib.pyplot as plt
+import annotation.utils as utils
 
 
 def output_limits(frames_list, M_list):
@@ -128,7 +125,7 @@ if __name__ == "__main__":
 	work_dir = video_config['work_dir']
 
 	if not os.path.exists(work_dir):
-		copy_tree("plantilla", work_dir)
+		copy_tree("template", work_dir)
 
 	start_time_msec = utils.string2msec(video_config['start_time'])
 	end_time_msec = utils.string2msec(video_config['end_time'])
@@ -148,8 +145,7 @@ if __name__ == "__main__":
 	for _ in range(num_itervals):
 
 		frames_list = []
-		time_msec_list = range(start_time_msec, end_time_msec, step_msec)
-		for time_msec in time_msec_list:
+		for time_msec in range(start_time_msec, end_time_msec + step_msec, step_msec):
 			frame = video_loader.frame_at(time_msec)
 			if frame is None:
 				break
@@ -163,7 +159,7 @@ if __name__ == "__main__":
 
 				pano, parameters = create_pano(frames_list)
 
-				print "\n>> Saving parameters of pano {}".format(pano_name)
+				print ">> Saving parameters of pano {}\n".format(pano_name)
 
 				cv2.imwrite('{}/panos/{}.png'.format(work_dir, pano_name), pano)
 

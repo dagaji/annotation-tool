@@ -1,5 +1,5 @@
 
-dataset_dir: "/home/davidgj/projects_v2/videos_dataset_prueba"
+dataset_dir: "../videos_dataset_prueba"
 
 LABELS:
   APR: 0
