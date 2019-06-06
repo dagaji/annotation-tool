@@ -91,6 +91,7 @@ def load_config_info(config_path):
 
     video_config.setdefault('fps', 1.0)
     video_config.setdefault('duration', "0:15")
+    video_config.setdefault('render', "labelme")
 
     dataset_config_dir = os.path.dirname(config_path)
     dataset_config_path = os.path.join(dataset_config_dir, "dataset.yml")

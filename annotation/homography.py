@@ -1,15 +1,7 @@
 import cv2
 import numpy as np
 from matplotlib import pyplot as plt
-import math
-import argparse
-import time
 import pdb
-import vis
-import os.path
-from downscale import _downscale as downscale
-import operator
-import sys; this = sys.modules[__name__]
 
 
 def homography(image_a, image_b, draw_matches=True):

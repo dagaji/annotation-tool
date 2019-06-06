@@ -1,79 +1,12 @@
-import json
 import cv2
 import os.path
-import vis
+import annotation.vis as vis
 import pdb
 import numpy as np
-from matplotlib import pyplot as plt
 from pathlib import Path
-import PIL.Image
-import PIL.ImageDraw
-from math import ceil
-from matplotlib.patches import Circle
 import pickle
-import config as cfg
-import utils
-
-def json2mask(annotation_path, labels_mapping, sz):
-
-	def check_point(point):
-
-		h, w = sz
-
-		if point[0] >= w:
-			x = w - 1
-		elif point[0] < 0:
-			x = 0
-		else:
-			x = point[0]
-
-
-		if point[1] >= h:
-			y = h - 1
-		elif h < 0:
-			y = 0
-		else:
-			y = point[1]
-
-		return (x, y)
-
-	mask = labels_mapping["background"] * np.ones(sz).astype(np.uint8)
-	test_mask = labels_mapping["background"] * np.ones(sz).astype(np.uint8)
-
-	mask = PIL.Image.fromarray(mask)
-	test_mask = PIL.Image.fromarray(test_mask)
-
-	draw = PIL.ImageDraw.Draw(mask)
-	test_draw = PIL.ImageDraw.Draw(test_mask)
-
-	with open(annotation_path, 'r') as f:
-		json_data = json.load(f)
-
-	for shape in json_data["shapes"]:
-
-		npoints = len(shape["points"])
-		xy = [check_point(tuple(point)) for point in shape["points"]]
-		label_mapping = labels_mapping[shape["label"]]
-
-		if npoints == 2:
-			draw.line(xy=xy, fill=label_mapping, width=16)
-			test_draw.line(xy=xy, fill=255, width=16)
-		elif npoints > 2:
-			draw.polygon(xy=xy, fill=label_mapping)
-			test_draw.polygon(xy=xy, fill=label_mapping)
-
-	for shape in json_data["shapes"]:
-
-		npoints = len(shape["points"])
-		xy = [check_point(tuple(point)) for point in shape["points"]]
-		label_mapping = labels_mapping[shape["label"]]
-
-		if npoints == 2:
-			test_draw.line(xy=xy, fill=label_mapping, width=8)
-
-	concat_mask = np.dstack((np.array(mask), np.array(test_mask)))
-
-	return concat_mask
+import annotation.utils as utils
+from annotation.render import select_render
 
 def get_section(section_name, step_msec):
 	section_start = section_name.split("-")[0]
@@ -147,13 +80,14 @@ if __name__ == "__main__":
 
 	video_loader = utils.VideoLoader(video_config['video_path'], video_config['camera'])
 	mask_extractor = MaskExtractor(work_dir, video_loader, labels_mapping)
+	render = select_render(video_config['render'])
 
 	for glob in Path(annotations_dir).glob("*.json"):
 
 		section_name = os.path.splitext(os.path.basename(glob.parts[-1]))[0]
 
 		pano = cv2.imread(os.path.join(panos_dir, section_name + ".png"))
-		full_mask = json2mask(os.path.join(annotations_dir, glob.parts[-1]), labels_mapping, pano.shape[:2])
+		full_mask = render(os.path.join(annotations_dir, glob.parts[-1]), labels_mapping, pano.shape[:2])
 
 		with open(os.path.join(parameters_dir, section_name + ".pickle"), 'rb') as handle:
 			parameters = pickle.load(handle)
